@@ -1,4 +1,0 @@
-#Tomcat publish data
-#Sat Apr 07 22:05:10 CST 2018
-org.eclipse.jst.jee.server\:/binary\:F\:\\bishe_workspace\\moodstore\\WebContent\\WEB-INF\\lib\\spring-web-3.2.4.RELEASE.jar=G\:\\apache-tomcat-8.5.23\\webapps\\moodstore\\WEB-INF\\lib\\spring-web-3.2.4.RELEASE.jar
-org.eclipse.jst.jee.server\:moodstore=G\:\\apache-tomcat-8.5.23\\webapps\\moodstore

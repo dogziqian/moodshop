@@ -1,0 +1,79 @@
+package com.moodshop.rest.controller;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URLDecoder;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.moodshop.comm.pojo.MSResult;
+import com.moodshop.comm.utils.JsonUtils;
+import com.moodshop.pojo.TbCart;
+import com.moodshop.rest.service.CartService;
+
+@Controller
+public class CartController {
+
+	private static final Logger logger = Logger.getLogger(CartController.class);
+	@Autowired
+	private CartService cartService;
+
+	@RequestMapping(value = "/cart/redis/add/", method = RequestMethod.POST)
+	@ResponseBody
+	public MSResult addRedisCart(@RequestParam("itemId") String itemIds, @RequestParam("num") String nums,
+			@RequestParam("cartKey") String cartKey) {
+		logger.info("开始添加redis购物车...... ");
+		Long itemId = Long.parseLong(itemIds);
+		Integer num = Integer.parseInt(nums);
+		MSResult result = cartService.addRedisCart(itemId, num, cartKey);
+		return result;
+	}
+
+	@RequestMapping(value = "/cart/add/", method = RequestMethod.POST)
+	@ResponseBody
+	public MSResult addCart(@RequestBody String reqjson) {
+		logger.info("开始添加数据库购物车...... ");
+		logger.info("前端传递数据为：" + reqjson);
+		TbCart cart=JsonUtils.jsonToPojo(reqjson, TbCart.class);
+		MSResult msResult = cartService.addItemToCart(cart);
+		return msResult;
+	}
+	
+	@RequestMapping("/cart/cart/{userId}")
+	@ResponseBody
+	public MSResult getCartList(@PathVariable Long userId){
+		logger.info("获取购物车列表......");
+		logger.info("前端传递的参数为："+userId);
+		MSResult result=cartService.getCartList(userId);
+		return result;
+	}
+	@RequestMapping("/cart/update/{itemId}/={itemId}&num={num}&userId={userId}")
+	@ResponseBody
+	public MSResult updateCartList(@RequestParam("itemId")Long itemId,@RequestParam("num")Integer num,@RequestParam("userId")Long userId){
+		logger.info("更新购物车......");
+		logger.info("前端传递的参数为：itemId="+itemId+"num="+num+"userId="+userId);
+		MSResult result=cartService.updateCart(itemId,num,userId);
+		return result;
+	}
+	@RequestMapping("/cart/delete?itemId={itemId}&userId={userId}")
+	@ResponseBody
+	public MSResult deleteCartList(@RequestParam("itemId")Long itemId,@RequestParam("userId")Long userId){
+		logger.info("更新购物车......");
+		logger.info("前端传递的参数为：itemId="+itemId+"userId="+userId);
+		MSResult result=cartService.deleteCart(itemId,userId);
+		return result;
+	}
+	
+}

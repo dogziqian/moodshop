@@ -1,0 +1,121 @@
+package com.moodshop.rest.controller;
+
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.moodshop.comm.pojo.MSResult;
+import com.moodshop.comm.utils.ExceptionUtil;
+import com.moodshop.pojo.TbItem;
+import com.moodshop.pojo.TbItemDesc;
+import com.moodshop.pojo.TbItemParamItem;
+import com.moodshop.rest.service.ItemService;
+/**
+ * 商品管理controller
+ * @author Administrator
+ *
+ */
+@Controller
+@RequestMapping("/item")
+public class ItemController {
+	private Logger logger=Logger.getLogger(ItemController.class);
+	@Autowired
+	private ItemService itemService;
+	
+	/**
+	 * 查询商品基本信息
+	 * @param itemId
+	 * @return
+	 */
+	@RequestMapping("/base/{itemId}")
+	@ResponseBody
+	public MSResult getItemById(@PathVariable Long itemId){
+		logger.info("开始查询商品基本信息......");
+		logger.info("前端传递参数为："+itemId);
+		try {
+			TbItem item=itemService.getItemById(itemId);
+			return MSResult.ok(item);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return MSResult.build(500, ExceptionUtil.getStackTrace(e));
+		} 	
+	}
+	@RequestMapping("/cate")
+	@ResponseBody
+	public MSResult getItemByCatId(@RequestParam(defaultValue = "") String catId,@RequestParam(defaultValue = "1") Integer page, @RequestParam(defaultValue = "30") Integer rows){
+		logger.info("开始查询商品基本信息......");
+		logger.info("前端传递参数为："+catId);
+		try {
+			SearchResult searchResult=itemService.getItemByCatId(catId);
+			return MSResult.ok(searchResult);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return MSResult.build(500, ExceptionUtil.getStackTrace(e));
+		} 	
+	}
+	/***
+	 * 根据商品id查询商品描述信息
+	 * @param itemId
+	 * @return
+	 */
+	@RequestMapping("/desc/{itemId}")
+	@ResponseBody
+	public MSResult getItemDescById(@PathVariable Long itemId) {
+		logger.info("查询商品描述信息 itemId="+itemId);
+		try {
+			TbItemDesc itemDesc = itemService.getItemDescById(itemId);
+			return MSResult.ok(itemDesc);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return MSResult.build(500, ExceptionUtil.getStackTrace(e));
+		}
+	}
+	/**
+	 * 根据商品id查询商品参数
+	 * @param itemId
+	 * @return
+	 */
+	@RequestMapping("/param/{itemId}")
+	@ResponseBody
+	public MSResult getItemParamById(@PathVariable Long itemId) {
+		logger.info("查询商品参数信息 itemId="+itemId);
+		try {
+			TbItemParamItem itemParamItem = itemService.getItemParamById(itemId);
+			return MSResult.ok(itemParamItem);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return MSResult.build(500, ExceptionUtil.getStackTrace(e));
+		}
+	}
+	@RequestMapping("/discount/{itemId}/{num}")
+	@ResponseBody
+	public MSResult getItemDiscountById(@PathVariable Long itemId,@PathVariable Integer num) {
+		logger.info("查询商品参数信息 itemId="+itemId+",num="+num);
+		try {
+			String value = itemService.getItemDiscountById(itemId,num);
+			return MSResult.ok(value);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return MSResult.build(500, ExceptionUtil.getStackTrace(e));
+		}
+	}
+	
+	@RequestMapping("/sync/item/{itemId}")
+	@ResponseBody
+	public MSResult sysncContent(@PathVariable Long itemId) {
+		logger.info("开始同步redis缓存,前段传递参数为："+itemId);
+		try {
+			MSResult result=itemService.syncItem(itemId);
+			return result;
+		} catch (Exception e) {
+			logger.info("同步缓存异常.....");
+			e.printStackTrace();
+			return MSResult.build(500, ExceptionUtil.getStackTrace(e));
+		}
+	}
+}

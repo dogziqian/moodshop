@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy element &apos;TbContentCategoryMapper.xml&apos; to &apos;moodshop-search/src/main/java/com.moodshop.search.dao&apos;&#x0D;&#x0A;- Original project: &apos;moodshop-manager-dao&apos;&#x0D;&#x0A;- Destination element: &apos;moodshop-search/src/main/java/com.moodshop.search.dao&apos;&#x0D;&#x0A;- Original element: &apos;TbContentCategoryMapper.xml&apos;" description="Copy file" destination="=moodshop-search/src\/main\/java&lt;com.moodshop.search.dao" element1="src/main/java/com/moodshop/mapper/TbContentCategoryMapper.xml" files="1" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1525932640483" units="0" version="1.0"/>
+</session>

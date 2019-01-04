@@ -1,0 +1,22 @@
+package com.moodshop.portal.service.impl;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.moodshop.portal.pojo.OrderInfo;
+import com.moodshop.portal.service.OrderService;
+@Service
+public class OrderServiceImpl implements OrderService {
+
+	@Value("${ORDER_BASE_URL}")
+	private String ORDER_BASE_URL;
+	@Value("${ORDER_CREATE_URL}")
+	private String ORDER_CREATE_URL;
+	
+	@Override
+	public String createOrder(OrderInfo orderInfo) {
+		
+		return null;
+	}
+
+}

@@ -1,0 +1,17 @@
+package com.moodshop.portal.service;
+
+import com.moodshop.pojo.TbItem;
+import com.moodshop.portal.pojo.SearchResult;
+
+public interface ItemService {
+	//根据商品id获取商品基本信息
+	TbItem getItemById(Long itemId);
+	//根据商品id获取商品描述
+	String getItemDescById(Long itemId);
+	//根据商品id获取商品参数
+	String getItemParamById(Long itemId);
+	//根据商品id获取商品折扣价格
+	Long getItemDiscountById(Long itemId,Integer num);
+	//根据catid获取商品列表
+	SearchResult getItemCatId(Long catId, Integer page, Integer rows);
+}

@@ -1,0 +1,61 @@
+package com.moodshop.portal.controller;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.moodshop.pojo.TbItem;
+import com.moodshop.portal.service.ItemService;
+
+@Controller
+public class ItemController {
+	private final static Logger logger = Logger.getLogger(ItemController.class);
+	@Autowired
+	private ItemService itemService;
+
+	@RequestMapping("/item/{itemId}")
+	public String showItemInfo(@PathVariable Long itemId, Model model) {
+		TbItem tbItem = itemService.getItemById(itemId);
+		logger.info("item[" + tbItem.getId() + "," + tbItem.getTitle() + "]");
+		model.addAttribute("item", tbItem);
+		return "item";
+	}
+	@RequestMapping("/item/cat/{catId}")
+	public String showItemList(@PathVariable Long catId, Model model) {
+		TbItem tbItem = itemService.getItemCatId(catId);
+		//logger.info("item[" + tbItem.getId() + "," + tbItem.getTitle() + "]");
+		model.addAttribute("item", tbItem);
+		return "item";
+	}
+	/**
+	 * 获取商品描述
+	 * @param itemId
+	 * @return
+	 */
+	@RequestMapping(value = "/item/desc/{itemId}", produces = MediaType.TEXT_HTML_VALUE + ";charset=utf-8")
+	@ResponseBody
+	public String getItemDesc(@PathVariable Long itemId) {
+		logger.info("开始加载商品详情.......");
+		String desc = itemService.getItemDescById(itemId);
+		logger.info("返回视图为："+desc);
+		return desc;
+	}
+	/**
+	 * 获取商品参数
+	 * @param itemId
+	 * @return
+	 */
+	@RequestMapping(value="/item/param/{itemId}", produces=MediaType.TEXT_HTML_VALUE+";charset=utf-8")
+	@ResponseBody
+	public String getItemParam(@PathVariable Long itemId) {
+		logger.info("获取商品参数.......");
+		String paramHtml = itemService.getItemParamById(itemId);
+		logger.info("返回的视图为："+paramHtml);
+		return paramHtml;
+	}
+}

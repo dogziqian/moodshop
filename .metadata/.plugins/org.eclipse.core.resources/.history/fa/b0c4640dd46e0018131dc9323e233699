@@ -1,0 +1,166 @@
+package com.moodshop.service.impl;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.moodshop.comm.pojo.EasyUITreeNode;
+import com.moodshop.comm.pojo.MSResult;
+import com.moodshop.mapper.TbItemCatMapper;
+import com.moodshop.pojo.TbContentCategory;
+import com.moodshop.pojo.TbContentCategoryExample;
+import com.moodshop.pojo.TbItem;
+import com.moodshop.pojo.TbItemCat;
+import com.moodshop.pojo.TbItemCatExample;
+import com.moodshop.pojo.TbItemCatExample.Criteria;
+import com.moodshop.service.ItemCatService;
+/**
+ * 商品种类实现类
+ * @author Administrator
+ *
+ */
+@Service
+public class ItemCatServiceImpl implements ItemCatService {
+	
+	private final static Logger logger=Logger.getLogger(ItemCatServiceImpl.class);
+	
+	@Autowired
+	private TbItemCatMapper itemCatMapper;
+	
+	/**
+	 * 获取所有商品种类
+	 */
+	@Override
+	public List<EasyUITreeNode> getItemTagList(long parentId) {
+		logger.info("根据parent——id查询分页列表.....");
+		//根据parent——id查询分页列表
+		TbItemCatExample example=new TbItemCatExample();
+		//设置查询条件
+		Criteria criteria=example.createCriteria();
+		criteria.andParentIdEqualTo(parentId);
+		//执行查询
+		List<TbItemCat> list=itemCatMapper.selectByExample(example);
+		
+		//转换成树形列表
+		List<EasyUITreeNode> treeList=new ArrayList<>();
+		for(TbItemCat itemCat:list){
+			EasyUITreeNode node=new EasyUITreeNode();
+			node.setId(itemCat.getId());
+			node.setText(itemCat.getName());
+			node.setState(itemCat.getIsParent()?"closed":"open");
+			treeList.add(node);
+		}
+		return treeList;
+	}
+
+	@Override
+	public MSResult insertCatgory(Long parentId, String name) {
+		logger.info("新增内容菜单.......");
+		// 创建一个pojo对象
+		TbItemCat itemCat = new TbItemCat();
+		itemCat.setName(name);
+		itemCat.setParentId(parentId);
+		// 1(正常),2(删除)
+		itemCat.setStatus(1);
+		itemCat.setIsParent(false);
+		// '排列序号，表示同级类目的展现次序，如数值相等则按名称次序排列。取值范围:大于零的整数'
+		itemCat.setSortOrder(1);
+		itemCat.setCreated(new Date());
+		itemCat.setUpdated(new Date());
+		logger.info("开始插入数据.......");
+		// 插入数据
+		itemCatMapper.insert(itemCat);
+		// 取返回的主键
+		Long id = itemCat.getId();
+		logger.info("新添加的节点的id为："+id);
+		// 判断父节点的isparent属性
+		// 查询父节点
+		logger.info("开始查询父节点.......");
+		TbItemCat parentNode = itemCatMapper.selectByPrimaryKey(parentId);
+		if (!parentNode.getIsParent()) {
+			parentNode.setIsParent(true);
+			// 更新父节点
+			logger.info("更新父节点.......");
+			itemCatMapper.updateByPrimaryKey(parentNode);
+		}
+		
+		// 返回主键
+		return MSResult.ok(id);
+	}
+
+	@Override
+	public MSResult updateCatgory(Long id, String newname) {
+		logger.info("开始更新内容分类名称..........");
+		//创建pojo
+		TbItemCat itemCat=new TbItemCat();
+		itemCat.setId(id);
+		itemCat.setName(newname);
+		itemCatMapper.updateByPrimaryKeySelective(itemCat);
+		return MSResult.ok();
+	}
+
+	@Override
+	public MSResult deleteCategory(Long id) {
+		logger.info("开始删除菜单内容........");
+		//查询该节点是否为父节点
+		TbItemCat itemCat=itemCatMapper.selectByPrimaryKey(id);
+		if(itemCat.getIsParent()){
+			//是父节点
+			logger.info("递归删除子节点");
+			deleteNodeByParent(id);
+		}else{
+			//是子节点，判断父节点是否包含其他子节点
+			logger.info("查询父节点相同的子节点......");
+			TbItemCatExample example=new TbItemCatExample();
+			Criteria criteria=example.createCriteria();
+			criteria.andParentIdEqualTo(itemCat.getParentId());
+			List<TbContentCategory> list=itemCatMapper.selectByExample(example);
+			if(list.size()<=1){
+				//父节点没有其余子节点，需要更改父节点isparent为0
+				TbContentCategory parentcontentCategory=new TbContentCategory();
+				parentcontentCategory.setId(contentCategory.getParentId());
+				parentcontentCategory.setIsParent(false);
+				logger.info("更新父节点状态.......");
+				contentCategoryMapper.updateByPrimaryKeySelective(parentcontentCategory);
+			}
+			logger.info("删除该节点.......");
+			contentCategoryMapper.deleteByPrimaryKey(id);
+		}
+		return MSResult.ok();
+	}
+	
+	/**
+	 * 递归删除节点
+	 * @param id
+	 */
+	private void deleteNodeByParent(Long id) {
+		//根据父id查询子id
+		TbContentCategoryExample example=new TbContentCategoryExample();
+		Criteria criteria=example.createCriteria();
+		criteria.andParentIdEqualTo(id);
+		List<TbContentCategory> list=contentCategoryMapper.selectByExample(example);
+		//遍历数组中的元素，查询是否为父节点
+		if(list!=null&&list.size()>0){
+			for(TbContentCategory contentCategroy:list){
+				//如果是父节点，继续递归
+				if(contentCategroy.getIsParent()){
+					deleteCategory(contentCategroy.getId());
+				}else{
+					//不是父节点，将查询出的节点删除掉
+					contentCategoryMapper.deleteByPrimaryKey(contentCategroy.getId());
+				}
+			}
+			//最后删除该节点
+			contentCategoryMapper.deleteByPrimaryKey(id);
+		}else{
+			//如果没有parentid为该节点的子节点，直接删除该节点
+			contentCategoryMapper.deleteByPrimaryKey(id);
+		}
+		
+	}
+
+}

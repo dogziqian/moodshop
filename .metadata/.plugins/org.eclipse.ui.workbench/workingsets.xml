@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workingSetManager>
+<workingSet editPageId="org.eclipse.ui.resourceWorkingSetPage" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1523787051610_1" label="pagehelper" name="pagehelper"/>
+<workingSet editPageId="org.eclipse.ui.resourceWorkingSetPage" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1527216408123_2" label="front" name="front">
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-portal" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-rest" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-sso" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-search" type="4"/>
+</workingSet>
+<workingSet editPageId="org.eclipse.ui.resourceWorkingSetPage" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1527216423411_3" label="common" name="common">
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-portal" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-comm" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-parent" type="4"/>
+</workingSet>
+<workingSet editPageId="org.eclipse.ui.resourceWorkingSetPage" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1527216444306_4" label="background" name="background">
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-manager-dao" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-manager-service" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-portal" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-manager-web" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-manager" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-manager-pojo" type="4"/>
+</workingSet>
+<workingSet editPageId="org.eclipse.ui.resourceWorkingSetPage" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1527216479803_5" label="Resource" name="Resource">
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/pagehelper" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/fastdfs-client-java" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/generatorSqlmapCustom" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/moodshop-crawler" type="4"/>
+</workingSet>
+<workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1522482816973_0" label="Window Working Set" name="Aggregate for window 1522482816973"/>
+<workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1527216556201_7" label="Multiple Working Sets" name="Aggregate:background:common:front:pagehelper:Resource:">
+<workingSet IMemento.internal.id="background"/>
+<workingSet IMemento.internal.id="common"/>
+<workingSet IMemento.internal.id="front"/>
+<workingSet IMemento.internal.id="pagehelper"/>
+<workingSet IMemento.internal.id="Resource"/>
+</workingSet>
+</workingSetManager>

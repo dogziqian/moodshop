@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy element &apos;OrderInfo.java&apos; to &apos;moodshop-comm/src/main/java/com.moodshop.comm.pojo&apos;&#x0D;&#x0A;- Original project: &apos;moodshop-portal&apos;&#x0D;&#x0A;- Destination element: &apos;moodshop-comm/src/main/java/com.moodshop.comm.pojo&apos;&#x0D;&#x0A;- Original element: &apos;com.moodshop.portal.pojo.OrderInfo.java&apos;" description="Copy compilation unit" destination="=moodshop-comm/src\/main\/java&lt;com.moodshop.comm.pojo" element1="/src\/main\/java&lt;com.moodshop.portal.pojo{OrderInfo.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1527386707783" units="1" version="1.0"/>
+</session>

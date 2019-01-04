@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename type &apos;com.moodshop.comm.utils.Express&apos; to &apos;ExpressUtils&apos;&#x0D;&#x0A;- Original project: &apos;moodshop-comm&apos;&#x0D;&#x0A;- Original element: &apos;com.moodshop.comm.utils.Express&apos;&#x0D;&#x0A;- Renamed element: &apos;com.moodshop.comm.utils.ExpressUtils&apos;&#x0D;&#x0A;- Update references to refactored element&#x0D;&#x0A;- Update textual occurrences in comments and strings" description="Rename type &apos;Express&apos;" flags="589830" id="org.eclipse.jdt.ui.rename.type" input="/src\/main\/java&lt;com.moodshop.comm.utils{Express.java[Express" matchStrategy="1" name="ExpressUtils" qualified="false" references="true" similarDeclarations="false" stamp="1527316410453" textual="false" version="1.0"/>
+</session>

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy package &apos;com.moodshop.mapper&apos; to &apos;moodshop-manager-pojo/src/main/java/com.moodshop.pojo&apos;&#x0D;&#x0A;- Original project: &apos;moodshop-manager-dao&apos;&#x0D;&#x0A;- Destination element: &apos;moodshop-manager-pojo/src/main/java/com.moodshop.pojo&apos;&#x0D;&#x0A;- Original element: &apos;moodshop-manager-dao/src/main/java/com.moodshop.mapper&apos;" description="Copy package" destination="=moodshop-manager-pojo/src\/main\/java&lt;com.moodshop.pojo" element1="/src\/main\/java&lt;com.moodshop.mapper" flags="589830" fragments="1" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyPackages" stamp="1526713001465" version="1.0"/>
+</session>

@@ -1,0 +1,75 @@
+package com.moodshop.service.impl;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.moodshop.comm.pojo.EasyUITreeNode;
+import com.moodshop.comm.pojo.MSResult;
+import com.moodshop.mapper.TbItemCatMapper;
+import com.moodshop.pojo.TbItem;
+import com.moodshop.pojo.TbItemCat;
+import com.moodshop.pojo.TbItemCatExample;
+import com.moodshop.pojo.TbItemCatExample.Criteria;
+import com.moodshop.service.ItemCatService;
+/**
+ * 商品种类实现类
+ * @author Administrator
+ *
+ */
+@Service
+public class ItemCatServiceImpl implements ItemCatService {
+	
+	private final static Logger logger=Logger.getLogger(ItemCatServiceImpl.class);
+	
+	@Autowired
+	private TbItemCatMapper itemCatMapper;
+	
+	/**
+	 * 获取所有商品种类
+	 */
+	@Override
+	public List<EasyUITreeNode> getItemTagList(long parentId) {
+		logger.info("根据parent——id查询分页列表.....");
+		//根据parent——id查询分页列表
+		TbItemCatExample example=new TbItemCatExample();
+		//设置查询条件
+		Criteria criteria=example.createCriteria();
+		criteria.andParentIdEqualTo(parentId);
+		//执行查询
+		List<TbItemCat> list=itemCatMapper.selectByExample(example);
+		
+		//转换成树形列表
+		List<EasyUITreeNode> treeList=new ArrayList<>();
+		for(TbItemCat itemCat:list){
+			EasyUITreeNode node=new EasyUITreeNode();
+			node.setId(itemCat.getId());
+			node.setText(itemCat.getName());
+			node.setState(itemCat.getIsParent()?"closed":"open");
+			treeList.add(node);
+		}
+		return treeList;
+	}
+
+	@Override
+	public MSResult insertCatgory(Long parentId, String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public MSResult updateCatgory(Long id, String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public MSResult deleteCategory(Long id) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

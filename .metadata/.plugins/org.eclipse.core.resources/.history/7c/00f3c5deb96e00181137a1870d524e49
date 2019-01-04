@@ -1,0 +1,42 @@
+package com.moodshop.rest.service.impl;
+
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.moodshop.comm.pojo.MSResult;
+import com.moodshop.mapper.TbUserdetailMapper;
+import com.moodshop.pojo.TbUserdetail;
+import com.moodshop.rest.service.UserInfoService;
+
+@Service
+public class UserInfoServiceImpl implements UserInfoService {
+	
+	private final static Logger logger=Logger.getLogger(UserInfoServiceImpl.class);
+	
+	@Autowired
+	TbUserdetailMapper userDetailMapper;
+	
+	@Override
+	public MSResult getUserDetail(Long userId) {
+		logger.info("根据userid查询用户具体信息.....");
+		TbUserdetail userDetail=userDetailMapper.selectByPrimaryKey(userId);
+		logger.info("查询到的结果为："+userDetail);
+		return MSResult.ok(userDetail);
+	}
+
+	@Override
+	public MSResult updateUserDetail(TbUserdetail userDetail) {
+		logger.info("更新用户信息");
+		userDetailMapper.updateByPrimaryKeySelective(userDetail);
+		return MSResult.ok();
+	}
+
+	@Override
+	public MSResult addUserDetail(TbUserdetail userDetail) {
+		return null;
+	}
+
+}

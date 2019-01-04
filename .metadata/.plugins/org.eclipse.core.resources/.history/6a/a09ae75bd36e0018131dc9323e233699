@@ -1,0 +1,106 @@
+package com.moodshop.service.impl;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.moodshop.comm.pojo.EasyUITreeNode;
+import com.moodshop.comm.pojo.MSResult;
+import com.moodshop.mapper.TbItemCatMapper;
+import com.moodshop.pojo.TbContentCategory;
+import com.moodshop.pojo.TbItem;
+import com.moodshop.pojo.TbItemCat;
+import com.moodshop.pojo.TbItemCatExample;
+import com.moodshop.pojo.TbItemCatExample.Criteria;
+import com.moodshop.service.ItemCatService;
+/**
+ * 商品种类实现类
+ * @author Administrator
+ *
+ */
+@Service
+public class ItemCatServiceImpl implements ItemCatService {
+	
+	private final static Logger logger=Logger.getLogger(ItemCatServiceImpl.class);
+	
+	@Autowired
+	private TbItemCatMapper itemCatMapper;
+	
+	/**
+	 * 获取所有商品种类
+	 */
+	@Override
+	public List<EasyUITreeNode> getItemTagList(long parentId) {
+		logger.info("根据parent——id查询分页列表.....");
+		//根据parent——id查询分页列表
+		TbItemCatExample example=new TbItemCatExample();
+		//设置查询条件
+		Criteria criteria=example.createCriteria();
+		criteria.andParentIdEqualTo(parentId);
+		//执行查询
+		List<TbItemCat> list=itemCatMapper.selectByExample(example);
+		
+		//转换成树形列表
+		List<EasyUITreeNode> treeList=new ArrayList<>();
+		for(TbItemCat itemCat:list){
+			EasyUITreeNode node=new EasyUITreeNode();
+			node.setId(itemCat.getId());
+			node.setText(itemCat.getName());
+			node.setState(itemCat.getIsParent()?"closed":"open");
+			treeList.add(node);
+		}
+		return treeList;
+	}
+
+	@Override
+	public MSResult insertCatgory(Long parentId, String name) {
+		logger.info("新增内容菜单.......");
+		// 创建一个pojo对象
+		TbItemCat itemCat = new TbItemCat();
+		itemCat.setName(name);
+		itemCat.setParentId(parentId);
+		// 1(正常),2(删除)
+		itemCat.setStatus(1);
+		contentCategory.setIsParent(false);
+		// '排列序号，表示同级类目的展现次序，如数值相等则按名称次序排列。取值范围:大于零的整数'
+		contentCategory.setSortOrder(1);
+		contentCategory.setCreated(new Date());
+		contentCategory.setUpdated(new Date());
+		logger.info("开始插入数据.......");
+		// 插入数据
+		contentCategoryMapper.insert(contentCategory);
+		// 取返回的主键
+		Long id = contentCategory.getId();
+		logger.info("新添加的节点的id为："+id);
+		// 判断父节点的isparent属性
+		// 查询父节点
+		logger.info("开始查询父节点.......");
+		TbContentCategory parentNode = contentCategoryMapper.selectByPrimaryKey(parentId);
+		if (!parentNode.getIsParent()) {
+			parentNode.setIsParent(true);
+			// 更新父节点
+			logger.info("更新父节点.......");
+			contentCategoryMapper.updateByPrimaryKey(parentNode);
+		}
+		
+		// 返回主键
+		return MSResult.ok(id);
+	}
+
+	@Override
+	public MSResult updateCatgory(Long id, String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public MSResult deleteCategory(Long id) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

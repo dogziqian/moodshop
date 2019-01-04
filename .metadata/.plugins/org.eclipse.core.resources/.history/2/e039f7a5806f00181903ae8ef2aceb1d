@@ -1,0 +1,236 @@
+package com.moodshop.order.service.impl;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.moodshop.comm.pojo.MSResult;
+import com.moodshop.mapper.TbItemMapper;
+import com.moodshop.mapper.TbOrderItemMapper;
+import com.moodshop.mapper.TbOrderMapper;
+import com.moodshop.mapper.TbOrderShippingMapper;
+import com.moodshop.order.component.JedisClient;
+import com.moodshop.order.pojo.OrderInfo;
+import com.moodshop.order.service.OrderService;
+import com.moodshop.pojo.TbOrder;
+import com.moodshop.pojo.TbOrderExample;
+import com.moodshop.pojo.TbOrderExample.Criteria;
+import com.moodshop.pojo.TbOrderItem;
+import com.moodshop.pojo.TbOrderItemExample;
+import com.moodshop.pojo.TbOrderShipping;
+import com.moodshop.pojo.TbOrderShippingExample;
+/**
+ * 订单业务层实现类
+ * @author Administrator
+ *
+ */
+@Service
+public class OrderServiceImpl implements OrderService {
+	
+	private Logger logger=Logger.getLogger(OrderServiceImpl.class);
+	
+	@Autowired
+	private TbOrderMapper orderMapper;
+	@Autowired
+	private TbOrderItemMapper orderItemMapper;
+	@Autowired
+	private TbOrderShippingMapper orderShippingMapper;
+	@Autowired
+	private TbItemMapper itemMapper;
+	
+	@Autowired
+	private JedisClient jedisClient;
+	
+	@Value("${REDIS_ORDER_GEN_KEY}")
+	private String REDIS_ORDER_GEN_KEY;
+	@Value("${ORDER_ID_BEGIN}")
+	private String ORDER_ID_BEGIN;
+	@Value("${REDIS_ORDER_DETAIL_GEN_KEY}")
+	private String REDIS_ORDER_DETAIL_GEN_KEY;
+	/**
+	 * 创建订单
+	 */
+	@Override
+	public MSResult createOrder(OrderInfo orderInfo) {
+		// 一、插入订单表
+		// 1、接收数据OrderInfo
+		// 2、生成订单号
+		// 取订单号
+		logger.info("开始生成订单号......");
+		String id = jedisClient.get(REDIS_ORDER_GEN_KEY);
+		
+		if (StringUtils.isBlank(id)) {
+			// 如果订单号生成key不存在设置初始值
+			logger.info("订单号中不存在初始值,将配置文件中默认初始值写入....");
+			jedisClient.set(REDIS_ORDER_GEN_KEY, ORDER_ID_BEGIN);
+		}
+		
+		Long orderId = jedisClient.incr(REDIS_ORDER_GEN_KEY);
+		logger.info("生成的订单号为："+orderId);
+		// 3、补全字段
+		orderInfo.setOrderId(orderId.toString());
+		
+		// 状态：1、未付款，2、已付款，3、未发货，4、已发货，5、交易成功，6、交易关闭
+		orderInfo.setStatus(1);
+		Date date = new Date();
+		orderInfo.setCreateTime(date);
+		orderInfo.setUpdateTime(date);
+		
+		// 二、插入订单明细
+		// 2、补全字段
+		List<TbOrderItem> orderItems = orderInfo.getOrderItems();
+		//统计数量
+		int totalNum=0;
+		for (TbOrderItem orderItem : orderItems) {
+			// 1、生成订单明细id，使用redis的incr命令生成。
+			Long detailId = jedisClient.incr(REDIS_ORDER_DETAIL_GEN_KEY);
+			logger.info("生成订单明细id:"+detailId);
+			orderItem.setId(detailId.toString());
+			// 订单号
+			orderItem.setOrderId(orderId.toString());
+			totalNum=orderItem.getNum()+totalNum;
+			// 3、插入数据
+			logger.info("开始插入订单明细......"+orderItem);
+			Integer count=orderItemMapper.insert(orderItem);
+			logger.info("订单明细影响条数："+count);
+		}
+		
+		logger.info("批发逻辑.....");
+		
+		if(totalNum<20){
+			logger.info("数量小于20，需要增加邮费....");
+			orderInfo.setPostFee("20");
+			orderInfo.setPayment(Double.toString((Double.parseDouble(orderInfo.getPayment())+20)));
+		}
+		
+		logger.info("获取商品.....");
+		TbItem item=
+		
+		logger.info("开始插入订单表......."+orderInfo);
+		
+		// 4、插入订单表
+		orderMapper.insert(orderInfo);
+		// 三、插入物流表
+		TbOrderShipping orderShipping = orderInfo.getOrderShipping();
+		// 1、补全字段
+		orderShipping.setOrderId(orderId.toString());
+		orderShipping.setCreated(date);
+		orderShipping.setUpdated(date);
+		// 2、插入数据
+		logger.info("开始插入物流表......"+orderShipping);
+		orderShippingMapper.insert(orderShipping);
+		// 返回MSResult包装订单号。
+		return MSResult.ok(orderId);
+	}
+	/**
+	 * 更新订单信息
+	 */
+	@Override
+	public MSResult updateOrder(TbOrder order) {
+		logger.info("开始更新订单信息......");
+		orderMapper.updateByPrimaryKeySelective(order);
+		return MSResult.ok();
+	}
+	/**
+	 * 获取订单项
+	 */
+	@Override
+	public MSResult getOrderItem(String orderId) {
+		logger.info("获取订单项..");
+		TbOrderItemExample example=new TbOrderItemExample();
+		com.moodshop.pojo.TbOrderItemExample.Criteria criteria=example.createCriteria();
+		criteria.andOrderIdEqualTo(orderId);
+		
+		List<TbOrderItem> list=orderItemMapper.selectByExample(example);
+		if(list.size()>0&&list!=null){
+			TbOrderItem orderItem =list.get(0);
+			logger.info("查询到的订单项为："+orderItem.getItemId());
+			return MSResult.ok(orderItem);
+		}
+		return MSResult.ok();
+	}
+	/**
+	 * 根据用户id获取订单列表
+	 */
+	@Override
+	public MSResult getOrderList(Long userId) {
+		logger.info("获取订单列表....");
+		TbOrderExample example=new TbOrderExample();
+		Criteria criteria=example.createCriteria();
+		criteria.andUserIdEqualTo(userId);
+		List<TbOrder> list=orderMapper.selectByExample(example);
+		
+		List<OrderInfo> orderList=new ArrayList<>();
+		
+		if(list.size()>0&&list!=null){
+			for (TbOrder tbOrder : list) {
+				//显示用户没有删除订单
+				if(tbOrder.getStatus()!=7){
+					OrderInfo orderInfo=new OrderInfo();
+					
+					//补全orderInfo
+					orderInfo.setBuyerMessage(tbOrder.getBuyerMessage());
+					orderInfo.setBuyerNick(tbOrder.getBuyerNick());
+					orderInfo.setBuyerRate(tbOrder.getBuyerRate());
+					orderInfo.setCloseTime(tbOrder.getCloseTime());
+					orderInfo.setConsignTime(tbOrder.getConsignTime());
+					orderInfo.setCreateTime(tbOrder.getCreateTime());
+					orderInfo.setEndTime(tbOrder.getEndTime());
+					orderInfo.setOrderId(tbOrder.getOrderId());
+					orderInfo.setPayment(tbOrder.getPayment());
+					orderInfo.setPaymentTime(tbOrder.getPaymentTime());
+					orderInfo.setPaymentType(tbOrder.getPaymentType());
+					orderInfo.setPostFee(tbOrder.getPostFee());
+					orderInfo.setShippingCode(tbOrder.getShippingCode());
+					orderInfo.setShippingName(tbOrder.getShippingName());
+					orderInfo.setStatus(tbOrder.getStatus());
+					orderInfo.setUpdateTime(tbOrder.getUpdateTime());
+					orderInfo.setUserId(tbOrder.getUserId());
+					
+					logger.info("获取订单项");
+					TbOrderItemExample itemExample =new TbOrderItemExample();
+					com.moodshop.pojo.TbOrderItemExample.Criteria itemCriteria=itemExample.createCriteria();
+					itemCriteria.andOrderIdEqualTo(tbOrder.getOrderId());
+					List<TbOrderItem> itemList=orderItemMapper.selectByExample(itemExample);
+					orderInfo.setOrderItems(itemList);
+					
+					logger.info("获取物流信息");
+					TbOrderShippingExample shippingExample=new TbOrderShippingExample();
+					com.moodshop.pojo.TbOrderShippingExample.Criteria shipCriteria=shippingExample.createCriteria();
+					shipCriteria.andOrderIdEqualTo(tbOrder.getOrderId());
+					List<TbOrderShipping> shipList=orderShippingMapper.selectByExample(shippingExample);
+					
+					if(shipList!=null&&shipList.size()>0){
+						orderInfo.setOrderShipping(shipList.get(0));
+					}
+					orderList.add(orderInfo);
+				}
+			}
+		}
+		
+		logger.info("查询到的信息为："+orderList);
+		
+		return MSResult.ok(orderList);
+	}
+	/**
+	 * 根据订单id删除订单信息
+	 */
+	@Override
+	public MSResult deleteOrder(String orderId) {
+		logger.info("删除订单信息....");
+		TbOrder order =new TbOrder();
+		order.setOrderId(orderId);
+		logger.info("设置订单状态为用户删除");
+		order.setStatus(7);
+		logger.info("更新订单状态为用户删除状态.....");
+		updateOrder(order);
+		return MSResult.ok();
+	}
+
+}

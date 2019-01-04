@@ -1,0 +1,239 @@
+package com.moodshop.rest.service.impl;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.moodshop.comm.pojo.MSResult;
+import com.moodshop.comm.utils.JsonUtils;
+import com.moodshop.mapper.TbItemDescMapper;
+import com.moodshop.mapper.TbItemDiscountMapper;
+import com.moodshop.mapper.TbItemMapper;
+import com.moodshop.mapper.TbItemParamItemMapper;
+import com.moodshop.pojo.TbItem;
+import com.moodshop.pojo.TbItemDesc;
+import com.moodshop.pojo.TbItemDiscount;
+import com.moodshop.pojo.TbItemDiscountExample;
+import com.moodshop.pojo.TbItemExample;
+import com.moodshop.pojo.TbItemParamItem;
+import com.moodshop.pojo.TbItemParamItemExample;
+import com.moodshop.pojo.TbItemParamItemExample.Criteria;
+import com.moodshop.rest.component.JedisClient;
+import com.moodshop.rest.pojo.SearchItem;
+import com.moodshop.rest.pojo.SearchResult;
+import com.moodshop.rest.service.ItemService;
+
+
+@Service
+public class ItemServiceImpl implements ItemService {
+	private final static Logger logger = Logger.getLogger(ItemServiceImpl.class);
+	@Autowired
+	private TbItemMapper itemMapper;
+	@Autowired
+	private JedisClient jedisClient;
+	@Autowired
+	private TbItemDescMapper itemDescMapper;
+	@Autowired
+	private TbItemParamItemMapper itemParamItemMapper;
+	@Autowired
+	private TbItemDiscountMapper itemDiscountMapper;
+
+	@Value("${REDIS_ITEM_KEY}")
+	private String REDIS_ITEM_KEY;
+	@Value("${ITEM_BASE_INFO}")
+	private String ITEM_BASE_INFO;
+	@Value("${ITEM_EXPIRE_TIME}")
+	private Integer ITEM_EXPIRE_TIME;
+	@Value("${ITEM_DESC_KEY}")
+	private String ITEM_DESC_KEY;
+	@Value("${ITEM_PARAM_KEY}")
+	private String ITEM_PARAM_KEY;
+
+	@Override
+	public TbItem getItemById(Long id) {
+		// 查询缓存（设置过期时间）
+
+		try {
+			logger.info("开始查询缓存.......");
+			String json = jedisClient.get(REDIS_ITEM_KEY + ":" + ITEM_BASE_INFO + ":" + id);
+			// 判断数据是否存在
+			if (StringUtils.isNoneBlank(json)) {
+				// 处理json数据，转换成java对象
+				logger.info("查询到的结果为：" + json);
+				TbItem item = JsonUtils.jsonToPojo(json, TbItem.class);
+				return item;
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+		// 根据商品id查询商品对象
+		TbItem item = itemMapper.selectByPrimaryKey(id);
+
+		// 添加缓存
+		try {
+			logger.info("开始添加缓存......");
+			jedisClient.set(REDIS_ITEM_KEY + ":" + ITEM_BASE_INFO + ":" + id, JsonUtils.objectToJson(item));
+			// 设置key的过期时间
+			jedisClient.expire(REDIS_ITEM_KEY + ":" + ITEM_BASE_INFO + ":" + id, ITEM_EXPIRE_TIME);
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.info("添加缓存异常。。。。。。");
+		}
+		return item;
+	}
+
+	@Override
+	public TbItemDesc getItemDescById(Long id) {
+		// 查询缓存
+		// 查询缓存，如果有缓存，直接返回
+		try {
+			logger.info("开始查询缓存.....");
+			String json = jedisClient.get(REDIS_ITEM_KEY + ":" + id + ":" + ITEM_DESC_KEY);
+			// 判断数据是否存在
+			if (StringUtils.isNotBlank(json)) {
+				logger.info("查询到的结果为：" + json);
+				// 把json数据转换成java对象
+				TbItemDesc itemDesc = JsonUtils.jsonToPojo(json, TbItemDesc.class);
+				return itemDesc;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		// 根据商品id查询商品详情
+		TbItemDesc itemDesc = itemDescMapper.selectByPrimaryKey(id);
+		// 添加缓存
+		try {
+			logger.info("开始添加缓存......");
+			// 向redis中添加缓存
+			jedisClient.set(REDIS_ITEM_KEY + ":" + id + ":" + ITEM_DESC_KEY, JsonUtils.objectToJson(itemDesc));
+			// 设置key的过期时间
+			jedisClient.expire(REDIS_ITEM_KEY + ":" + id + ":" + ITEM_DESC_KEY, ITEM_EXPIRE_TIME);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return itemDesc;
+	}
+
+	@Override
+	public TbItemParamItem getItemParamById(Long id) {
+		// 添加缓存逻辑
+		// 查询缓存
+		// 查询缓存，如果有缓存，直接返回
+		try {
+			logger.info("开始查询缓存.....");
+			String json = jedisClient.get(REDIS_ITEM_KEY + ":" + id + ":" + ITEM_PARAM_KEY);
+			// 判断数据是否存在
+			if (StringUtils.isNotBlank(json)) {
+				logger.info("查询到内容为：" + json);
+				// 把json数据转换成java对象
+				TbItemParamItem itemParamitem = JsonUtils.jsonToPojo(json, TbItemParamItem.class);
+				return itemParamitem;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		logger.info("开始查询数据库.....");
+		// 根据商品id查询规格参数
+		TbItemParamItemExample example = new TbItemParamItemExample();
+		Criteria criteria = example.createCriteria();
+		criteria.andItemIdEqualTo(id);
+		List<TbItemParamItem> list = itemParamItemMapper.selectByExampleWithBLOBs(example);
+		// 取规格参数
+		if (list != null && list.size() > 0) {
+			logger.info("查询到的数据为：" + list.get(0));
+			TbItemParamItem itemParamItem = list.get(0);
+			// 添加缓存
+			try {
+				logger.info("添加缓存......");
+				// 向redis中添加缓存
+				jedisClient.set(REDIS_ITEM_KEY + ":" + id + ":" + ITEM_PARAM_KEY,
+						JsonUtils.objectToJson(itemParamItem));
+				// 设置key的过期时间
+				jedisClient.expire(REDIS_ITEM_KEY + ":" + id + ":" + ITEM_PARAM_KEY, ITEM_EXPIRE_TIME);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return itemParamItem;
+		}
+		return null;
+	}
+
+	@Override
+	public MSResult syncItem(long itemId) {
+		logger.info("删除基础信息");
+		jedisClient.del(REDIS_ITEM_KEY + ":" + ITEM_BASE_INFO + ":" + itemId);
+		logger.info("删除描述信息");
+		jedisClient.del(REDIS_ITEM_KEY + ":" + itemId + ":" + ITEM_DESC_KEY);
+		logger.info("删除参数信息");
+		jedisClient.del(REDIS_ITEM_KEY + ":" + itemId + ":" + ITEM_PARAM_KEY);
+		return MSResult.ok();
+	}
+
+	@Override
+	public String getItemDiscountById(Long itemId, Integer num) {
+
+		logger.info("开始查询数据库.....");
+		// 根据商品id查询规格参数
+		TbItemDiscountExample example = new TbItemDiscountExample();
+		com.moodshop.pojo.TbItemDiscountExample.Criteria criteria = example.createCriteria();
+		criteria.andItemIdEqualTo(itemId);
+		List<TbItemDiscount> list = itemDiscountMapper.selectByExample(example);
+		// 取规格参数
+		if (list != null && list.size() > 0) {
+			logger.info("查询到的数据为：" + list.get(0));
+			TbItemDiscount itemDiscount = list.get(0);
+			String disJson=itemDiscount.getDisPrice();
+			logger.info("json数据为:"+disJson);
+			//转换成java对象
+			List<Map> disList=JsonUtils.jsonToList(disJson, Map.class);
+			for(int i=0;i<disList.size();i++){
+				Integer disDegree=Integer.valueOf((String) disList.get(i).get("k")) ;
+				logger.info("disDegree为："+disDegree);
+				if(num<disDegree){
+					return  disList.get(i-1).get("v").toString();
+				}else if(num>200){
+					return disList.get(disList.size()-1).get("v").toString();
+				}
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public SearchResult getItemByCatId(String catId) {
+		TbItemExample example=new TbItemExample();
+		com.moodshop.pojo.TbItemExample.Criteria criteria=example.createCriteria();
+		criteria.andCidEqualTo(Long.valueOf(catId));
+		List<TbItem> list=itemMapper.selectByExample(example);
+		List<SearchItem> sList =new ArrayList<>();
+		for(TbItem item:list){
+			SearchItem sItem=new SearchItem();
+			sItem.setId(item.getId().toString());
+			sItem.setCategory_name(item.getCid().toString());
+			sItem.setImage(item.getImage());
+			//sItem.setItem_desc();
+			sItem.setTitle(item.getTitle());
+			sItem.setPrice(item.getPrice());
+			sList.add(sItem);
+		}
+		SearchResult result = new SearchResult();
+		result.setItemList(sList);
+		return result;
+	}
+
+	@Override
+	public Integer updateItemNum(Long itemId,Integer num) {
+		TbItemExample example=new TbItemExample();
+		com.moodshop.pojo.TbItemExample.Criteria criteria=example.createCriteria();
+		criteria.andIdEqualTo(itemId);
+		
+		return null;
+	}
+
+}

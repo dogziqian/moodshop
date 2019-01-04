@@ -1,0 +1,16 @@
+package com.moodshop.portal.service.impl;
+
+import org.springframework.stereotype.Service;
+
+import com.moodshop.portal.pojo.OrderInfo;
+import com.moodshop.portal.service.OrderService;
+@Service
+public class OrderServiceImpl implements OrderService {
+
+	@Override
+	public String createOrder(OrderInfo orderInfo) {
+		
+		return null;
+	}
+
+}

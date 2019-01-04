@@ -1,0 +1,204 @@
+package com.moodshop.controller;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.moodshop.comm.pojo.EasyUIDataGridResult;
+import com.moodshop.comm.pojo.MSResult;
+import com.moodshop.comm.utils.CookieUtils;
+import com.moodshop.comm.utils.HttpClientUtil;
+import com.moodshop.pojo.TbItem;
+import com.moodshop.service.ItemService;
+import com.moodshop.service.impl.AdminLogUtil;
+/**
+ * 商品处理controller
+ * @author Administrator
+ *
+ */
+@Controller
+public class ItemController {
+	
+	private final static Logger logger=Logger.getLogger(ItemController.class);
+	
+	@Autowired
+	private ItemService itemService;
+	@Autowired
+	private AdminLogUtil adminLogUtil;
+	
+	@Value("${REST_BASE_URL}")
+	private String REST_BASE_URL;
+	@Value("${REST_IEM_SYNC_URL}")
+	private String REST_IEM_SYNC_URL;
+	@Value("${SEARCH_BASE_URL}")
+	private String SEARCH_BASE_URL;
+	@Value("${SEARCH_IMPORT_ITEM}")
+	private String SEARCH_IMPORT_ITEM;
+	
+	/**
+	 * 根据商品id获取商品
+	 * @param itemId
+	 * @return
+	 */
+	@RequestMapping("/item/{itemId}")
+	@ResponseBody
+	private TbItem getItemById(@PathVariable Long itemId){
+		logger.info("根据商品id获取商品........");
+		logger.info("前段传递参数--------itemId"+itemId);
+		TbItem item=itemService.getItemById(itemId);
+		return item;
+	}
+	/**
+	 * 获取分页列表
+	 * @param page
+	 * @param rows
+	 * @return
+	 */
+	@RequestMapping("/item/list")
+	@ResponseBody
+	public EasyUIDataGridResult getItemList(Integer page,Integer rows){
+		logger.info("开始获取分页列表");
+		EasyUIDataGridResult result=itemService.getItemList(page, rows);
+		return result;
+	}
+	/**
+	 * 新增商品
+	 * @return
+	 */
+	@RequestMapping(value="/item/save",method=RequestMethod.POST)
+	@ResponseBody
+	public MSResult createItem(TbItem item,String desc,String itemParams,String disprice,HttpServletRequest request){
+		logger.info("新增商品.......");	
+		logger.info("前端传递参数为："+disprice);
+		MSResult result=itemService.createItem(item, desc,itemParams,disprice);
+		String adminName = CookieUtils.getCookieValue(request, "admin");
+		adminLogUtil.addLog(adminName, "新增商品"+item.getId());
+		logger.info("solr添加商品");
+		String sResutlt=HttpClientUtil.doGet(SEARCH_BASE_URL+SEARCH_IMPORT_ITEM);
+		logger.info("导入结果为");
+		return result;
+	}
+	/**
+	 * 显示商品参数
+	 * @param itemId
+	 * @param model
+	 * @return
+	 */
+	@RequestMapping("/page/item/{itemId}")
+	public String showItemParam(@PathVariable Long itemId, Model model) {
+		logger.info("前段传递参数--------"+itemId);
+		String html = itemService.getItemParamHtml(itemId);
+		model.addAttribute("html", html);
+		return"item-param";
+	}
+	/**
+	 * 下架商品
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping("/item/instock")
+	@ResponseBody
+	public MSResult instockItem(@RequestParam("ids") Long id,HttpServletRequest request){
+		
+		logger.info("下架商品....");
+		logger.info("前端传递参数为：id="+id);
+		itemService.updateItemStatus(id, (byte) 2);
+		String adminName = CookieUtils.getCookieValue(request, "admin");
+		adminLogUtil.addLog(adminName, "下架商品"+id);
+		logger.info("同步缓存信息.....");
+		HttpClientUtil.doGet(REST_BASE_URL+REST_IEM_SYNC_URL+id);
+		
+		return MSResult.ok();
+	}
+	/**
+	 * 上架商品
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping("/item/reshelf")
+	@ResponseBody
+	public MSResult reshelfItem(@RequestParam("ids") Long id,HttpServletRequest request){
+		
+		logger.info("上架商品....");
+		logger.info("前端传递参数为：id="+id);
+		itemService.updateItemStatus(id, (byte) 1);
+		String adminName = CookieUtils.getCookieValue(request, "admin");
+		adminLogUtil.addLog(adminName, "上架商品"+id);
+		logger.info("同步缓存信息.....");
+		HttpClientUtil.doGet(REST_BASE_URL+REST_IEM_SYNC_URL+id);
+		
+		return MSResult.ok();
+	}
+	/**
+	 * 删除商品
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping("/item/delete")
+	@ResponseBody
+	public MSResult deleteItem(@RequestParam("ids") Long id,HttpServletRequest request){
+		
+		logger.info("删除商品....");
+		logger.info("前端传递参数为：id="+id);
+		MSResult result=itemService.updateItemStatus(id, (byte) 3);
+		String adminName = CookieUtils.getCookieValue(request, "admin");
+		adminLogUtil.addLog(adminName, "删除商品"+id);
+		logger.info("同步缓存信息.....");
+		HttpClientUtil.doGet(REST_BASE_URL+REST_IEM_SYNC_URL+id);
+		
+		return result;
+	}
+	/**
+	 * 修改商品信息
+	 * @param id
+	 * @param item
+	 * @return
+	 */
+	@RequestMapping(value="/item/update",method=RequestMethod.POST)
+	@ResponseBody
+	public MSResult updateItem(@RequestParam("id") Long itemId,TbItem item,String desc,String itemParams,HttpServletRequest request){
+		
+		logger.info("修改商品信息....");
+		logger.info("前端传递参数为：id="+itemId+",Tbitem="+item);
+		
+		MSResult result=itemService.updateItem(itemId, item, desc, itemParams);
+		String adminName = CookieUtils.getCookieValue(request, "admin");
+		adminLogUtil.addLog(adminName, "更新商品"+item.getId());
+		logger.info("同步缓存信息.....");
+		HttpClientUtil.doGet(REST_BASE_URL+REST_IEM_SYNC_URL+itemId);
+		
+		return result;
+	}
+	/**
+	 * 查询商品描述
+	 * @param itemId
+	 * @return
+	 */
+	@RequestMapping("/item/query/item/desc/{itemId}")
+	@ResponseBody
+	public MSResult queryDesc(@PathVariable Long itemId){
+		logger.info("查询商品描述......");
+		logger.info("前端传递参数为："+itemId);
+		
+		MSResult result=itemService.getItemDesc(itemId);
+		
+		return result;
+	}
+	@RequestMapping("/item/param/item/query/{itemId}")
+	@ResponseBody
+	public MSResult queryItemParam(@PathVariable Long itemId){
+		logger.info("开始查询商品参数....");
+		logger.info("前段传递参数为："+itemId);
+		MSResult result=itemService.getItemParam(itemId);
+		return result;
+	}
+}

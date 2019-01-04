@@ -13,6 +13,9 @@
         <dependent-module archiveName="moodshop-manager-pojo-0.0.1-SNAPSHOT.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/moodshop-manager-pojo/moodshop-manager-pojo">
             <dependency-type>uses</dependency-type>
         </dependent-module>
+        <dependent-module archiveName="pagehelper-3.4.2-fix.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/pagehelper/pagehelper">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
         <dependent-module archiveName="moodshop-comm-0.0.1-SNAPSHOT.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/moodshop-comm/moodshop-comm">
             <dependency-type>uses</dependency-type>
         </dependent-module>

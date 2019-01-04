@@ -24,7 +24,7 @@
 		<module>moodshop-manager-service</module>
 		<module>moodshop-manager-web</module>
 	</modules>
-	
+
 	<!-- 添加tomcat插件 -->
 	<build>
 		<plugins>
@@ -34,7 +34,16 @@
 				<configuration>
 					<port>8080</port>
 					<path>/</path>
+					<!-- 系统热部署 -->
+					<url>http://192.168.206.128:8080/manager/text</url>
+					<username>tomcat</username>
+					<password>tomcat</password>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>3.0.0</version>
 			</plugin>
 		</plugins>
 	</build>

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy 2 elements to &apos;moodshop-rest/src/main/java/com.moodshop.rest.pojo&apos;&#x0D;&#x0A;- Original project: &apos;moodshop-search&apos;&#x0D;&#x0A;- Destination element: &apos;moodshop-rest/src/main/java/com.moodshop.rest.pojo&apos;&#x0D;&#x0A;- Original elements:&#x0D;&#x0A;     com.moodshop.search.pojo.SearchItem.java&#x0D;&#x0A;     com.moodshop.search.pojo.SearchResult.java" description="Copy compilation units" destination="=moodshop-rest/src\/main\/java&lt;com.moodshop.rest.pojo" element1="/src\/main\/java&lt;com.moodshop.search.pojo{SearchItem.java" element2="/src\/main\/java&lt;com.moodshop.search.pojo{SearchResult.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1528954924090" units="2" version="1.0"/>
+</session>

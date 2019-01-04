@@ -1,0 +1,137 @@
+package com.moodshop.portal.service.impl;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.moodshop.comm.pojo.MSResult;
+import com.moodshop.comm.utils.HttpClientUtil;
+import com.moodshop.comm.utils.JsonUtils;
+import com.moodshop.pojo.TbItem;
+import com.moodshop.pojo.TbItemDesc;
+import com.moodshop.pojo.TbItemParamItem;
+import com.moodshop.portal.pojo.PortalItem;
+import com.moodshop.portal.pojo.SearchResult;
+import com.moodshop.portal.service.ItemService;
+
+@Service
+public class ItemServiceImpl implements ItemService {
+	private final static Logger logger = Logger.getLogger(ItemServiceImpl.class);
+	@Value("${REST_ITEM_BASE_URL}")
+	private String REST_ITEM_BASE_URL;
+	@Value("${REST_BASE_URL}")
+	private String REST_BASE_URL;
+	@Value("${REST_ITEM_DESC_URL}")
+	private String REST_ITEM_DESC_URL;
+	@Value("${REST_ITEM_PARAM_URL}")
+	private String REST_ITEM_PARAM_URL;
+	@Value("${REST_ITEM_DIS_URL}")
+	private String REST_ITEM_DIS_URL;
+	@Value("${REST_CAT_ITEM_URL}")
+	private String REST_CAT_ITEM_URL;
+	
+
+	/**
+	 * 根据商品id获取商品信息
+	 */
+	@Override
+	public TbItem getItemById(Long itemId) {
+		logger.info("请求的URL为：" + REST_BASE_URL + REST_ITEM_BASE_URL + itemId);
+		// 根据商品id查询基本信息
+		String json = HttpClientUtil.doGet(REST_BASE_URL + REST_ITEM_BASE_URL + itemId);
+		logger.info("获取到的结果为：" + json);
+		// 转换成java对象
+		MSResult msResult = MSResult.formatToPojo(json, PortalItem.class);
+		// 取商品对象
+		TbItem item = (TbItem) msResult.getData();
+		logger.info("返回结果为：" + item);
+		return item;
+	}
+
+	@Override
+	public String getItemDescById(Long itemId) {
+		// 根据商品id调用MS-rest的服务获得数据
+		// http://localhost:8081/rest/item/desc/144766336139977
+		logger.info("加载商品详情......请求URL为：" + REST_BASE_URL + REST_ITEM_DESC_URL + itemId);
+		String json = HttpClientUtil.doGet(REST_BASE_URL + REST_ITEM_DESC_URL + itemId);
+		// 转换成java对象
+		MSResult msResult = MSResult.formatToPojo(json, TbItemDesc.class);
+		// 取商品描述
+		TbItemDesc itemDesc = (TbItemDesc) msResult.getData();
+		String desc = itemDesc.getItemDesc();
+		return desc;
+	}
+
+	@Override
+	public String getItemParamById(Long itemId) {
+		logger.info("获取商品参数.....请求的URL为：" + REST_BASE_URL + REST_ITEM_PARAM_URL + itemId);
+		// 根据商品id获得对应的规格参数
+		String json = HttpClientUtil.doGet(REST_BASE_URL + REST_ITEM_PARAM_URL + itemId);
+		// 转换成java对象
+		MSResult msResult = MSResult.formatToPojo(json, TbItemParamItem.class);
+		// 取规格参数
+		TbItemParamItem itemParamItem = (TbItemParamItem) msResult.getData();
+		String paramJson = itemParamItem.getParamData();
+		// 把规格参数的json数据转换成java对象
+		// 转换成java对象
+		List<Map> mapList = JsonUtils.jsonToList(paramJson, Map.class);
+		// 遍历list生成html
+		StringBuffer sb = new StringBuffer();
+
+		sb.append("<table cellpadding=\"0\" cellspacing=\"1\" width=\"100%\" border=\"0\" class=\"Ptable\">\n");
+		sb.append("	<tbody>\n");
+		for (Map map : mapList) {
+			sb.append("		<tr>\n");
+			sb.append("			<th class=\"tdTitle\" colspan=\"2\">" + map.get("group") + "</th>\n");
+			sb.append("		</tr>\n");
+			// 取规格项
+			List<Map> mapList2 = (List<Map>) map.get("params");
+			for (Map map2 : mapList2) {
+				sb.append("		<tr>\n");
+				sb.append("			<td class=\"tdTitle\">" + map2.get("k") + "</td>\n");
+				sb.append("			<td>" + map2.get("v") + "</td>\n");
+				sb.append("		</tr>\n");
+			}
+		}
+		sb.append("	</tbody>\n");
+		sb.append("</table>");
+
+		return sb.toString();
+	}
+
+	@Override
+	public Long getItemDiscountById(Long itemId, Integer num) {
+		logger.info("获取商品参数.....请求的URL为：" + REST_BASE_URL + REST_ITEM_DIS_URL + itemId + "/" + num);
+		// 根据商品id获得对应的规格参数
+		String json = HttpClientUtil.doGet(REST_BASE_URL + REST_ITEM_DIS_URL + itemId + "/" + num);
+		logger.info("返回报文为：" + json);
+		// 转换成java对象
+		MSResult msResult = MSResult.formatToPojo(json, String.class);
+		//获取价格
+		String disprice=(String) msResult.getData();
+		
+		return Long.valueOf(disprice);
+	}
+
+	@Override
+	public SearchResult getItemCatId(Long catId, Integer page, Integer rows) {
+		Map<String, String> param = new HashMap<>();
+		param.put("catId", catId + "");
+		param.put("page", page + "");
+		param.put("rows", rows + "");
+		// 调用服务
+		String json = HttpClientUtil.doGet(REST_BASE_URL+REST_CAT_ITEM_URL, param);
+		logger.info("返回报文为："+json);
+		// 转换成java对象
+		MSResult msResult = MSResult.formatToPojo(json, SearchResult.class);
+		// 取返回的结果
+		SearchResult searchResult = (SearchResult) msResult.getData();
+		logger.info("结果为："+searchResult);
+		return null;
+	}
+
+}

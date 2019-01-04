@@ -1,0 +1,145 @@
+package com.moodshop.rest.service.impl;
+
+import java.util.Date;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.moodshop.comm.pojo.MSResult;
+import com.moodshop.comm.utils.JsonUtils;
+import com.moodshop.mapper.TbCartMapper;
+import com.moodshop.pojo.TbCart;
+import com.moodshop.pojo.TbCartExample;
+import com.moodshop.pojo.TbCartExample.Criteria;
+import com.moodshop.pojo.TbItem;
+import com.moodshop.rest.component.JedisClient;
+import com.moodshop.rest.service.CartService;
+import com.moodshop.rest.service.ItemService;
+
+@Service
+public class CartServiceImpl implements CartService {
+
+	private final static Logger logger = Logger.getLogger(CartServiceImpl.class);
+	@Autowired
+	private JedisClient jedisClient;
+	@Autowired
+	private ItemService itemService;
+	@Autowired
+	private TbCartMapper cartMapper;
+
+
+	public static final String KEY_STR = "CART_";
+
+	@Override
+	public MSResult addRedisCart(Long itemId, Integer num, String cartKey) {
+		logger.info("查询缓存中是否有对应的信息.....");
+		String key = KEY_STR + cartKey;
+		String value = jedisClient.hget(key, Long.toString(itemId));
+		TbCart cart = null;
+		if (value == null) {
+			// 商品不存在
+			logger.info("不存在对应商品数据......");
+			logger.info("添加缓存....");
+			TbItem item = itemService.getItemById(itemId);
+			cart = new TbCart();
+			cart.setCreated(new Date());
+			TbItem items=itemService.getItemById(itemId);
+			if(items.getNum()<num){
+				logger.info("");
+			}
+			cart.setItemid(itemId);
+			cart.setItemimage(item.getImage());
+			cart.setItemprice(item.getPrice());
+			cart.setItemtitle(item.getTitle());
+			cart.setNum(num);
+			cart.setUpdated(new Date());
+		} else {
+			// 商品已经存在,添加数量
+			logger.info("商品已经存在，增加数量......");
+			cart = JsonUtils.jsonToPojo(value, TbCart.class);
+			cart.setNum(cart.getNum() + 1);
+			cart.setUpdated(new Date());
+			logger.info("删除缓存......");
+			jedisClient.hdel(key, Long.toString(itemId));
+		}
+		jedisClient.hset(cartKey, Long.toString(itemId), JsonUtils.objectToJson(cart));
+		jedisClient.expire(key, 60 * 60 * 24 * 30);
+		return null;
+	}
+
+	/**
+	 * 向数据库中添加购物车信息
+	 */
+	@Override
+	public MSResult addItemToCart(TbCart cart) {
+		logger.info("开始向数据库添加信息....");
+		logger.info("根据itemId和userId查询数据.....");
+		TbCartExample example = new TbCartExample();
+		Criteria criteria = example.createCriteria();
+		criteria.andItemidEqualTo(cart.getItemid());
+		criteria.andUseridEqualTo(cart.getUserid());
+		List<TbCart> list = cartMapper.selectByExample(example);
+		if (list.size() > 0 && list != null) {
+			cart = list.get(0);
+			logger.info("查询到的结果为:" + cart);
+			cart.setNum(cart.getNum()+1);
+			logger.info("更新数量....");
+			Integer count=cartMapper.updateByPrimaryKeySelective(cart);
+			logger.info("影响的行数为:"+count);
+		}else{
+			Integer num = cartMapper.insert(cart);
+			logger.info("影响行数为：" + num);
+		}
+		
+		return MSResult.ok();
+	}
+
+	@Override
+	public MSResult getCartList(Long userId) {
+		// 获取购物车列表
+		logger.info("根据userid查询购物车列表......");
+		TbCartExample example = new TbCartExample();
+		Criteria criteria = example.createCriteria();
+		criteria.andUseridEqualTo(userId);
+		List<TbCart> list = cartMapper.selectByExample(example);
+		logger.info("查询到的结果为：" + list);
+		return MSResult.ok(list);
+	}
+
+	@Override
+	public MSResult updateCart(Long itemId, Integer num, Long userId) {
+		logger.info("更新购物车...");
+		logger.info("根据itemId和userId查询数据.....");
+		TbCartExample example = new TbCartExample();
+		Criteria criteria = example.createCriteria();
+		criteria.andItemidEqualTo(itemId);
+		criteria.andUseridEqualTo(userId);
+		List<TbCart> list = cartMapper.selectByExample(example);
+		TbCart cart = new TbCart();
+		if (list.size() > 0 && list != null) {
+			cart = list.get(0);
+			logger.info("查询到的结果为:" + cart);
+			cart.setNum(num);
+			logger.info("更新数量....");
+			
+			Integer count=cartMapper.updateByPrimaryKeySelective(cart);
+			logger.info("影响的行数为:"+count);
+		}
+		return MSResult.ok();
+	}
+
+	@Override
+	public MSResult deleteCart(Long itemId, Long userId) {
+		logger.info("开始删除购物车.....");
+		TbCartExample example=new TbCartExample();
+		Criteria criteria=example.createCriteria();
+		criteria.andItemidEqualTo(itemId);
+		criteria.andUseridEqualTo(userId);
+		Integer count=cartMapper.deleteByExample(example);
+		logger.info("影响的行数为:"+count);
+		return MSResult.ok();
+	}
+
+}

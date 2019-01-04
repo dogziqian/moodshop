@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;moodstore/WebContent/moodstore/jsp/body&apos; to &apos;person&apos;" description="Rename resource &apos;body&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="WebContent/moodstore/jsp/body" name="person" stamp="1523106980905" updateReferences="true"/>
+</session>

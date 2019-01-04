@@ -1,0 +1,168 @@
+package com.moodshop.portal.controller;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.moodshop.comm.pojo.MSResult;
+import com.moodshop.pojo.TbOrder;
+import com.moodshop.pojo.TbOrderItem;
+import com.moodshop.pojo.TbUser;
+import com.moodshop.portal.pojo.CartItem;
+import com.moodshop.portal.pojo.OrderInfo;
+import com.moodshop.portal.service.CartService;
+import com.moodshop.portal.service.OrderService;
+import com.moodshop.portal.service.UserService;
+
+@Controller
+@RequestMapping("/order")
+public class OrderController {
+
+	private final static Logger logger = Logger.getLogger(OrderController.class);
+	@Autowired
+	private CartService cartService;
+
+	@Autowired
+	private OrderService orderService;
+	@Autowired
+	private UserService userService;
+
+	@RequestMapping("/order-cart")
+	public String showOrderCart(Model model, HttpServletRequest request, HttpServletResponse response) {
+		// 取购物车商品列表
+		logger.info("开始查询购物车列表......");
+		TbUser user = userService.getUserByToken(request, response);
+		List<CartItem> list = cartService.getCartEnItems(user.getId());
+		model.addAttribute("cartList", list);
+		return "order-cart";
+	}
+
+	@RequestMapping(value = "/alipay.trade.page.pay", method = RequestMethod.POST)
+	public String alipay() {
+		return "alipay/alipay.trade.page.pay";
+	}
+
+	@RequestMapping("/alipay/notify_url")
+	public String aliNotify() {
+		return "/alipay/notify_url";
+	}
+
+	@RequestMapping("/aliPayMentCallback")
+	public String orderSuccess(Model model, HttpServletRequest request, @RequestParam("out_trade_no") String orderId,
+			@RequestParam("total_amount") String payment) throws Exception {
+		logger.info("支付成功，更新订单状态......orderId=" + orderId);
+		TbOrder order = new TbOrder();
+		order.setOrderId(orderId);
+		order.setPayment(payment);
+		// SimpleDateFormat formart=new SimpleDateFormat("YYYY-MM-dd");
+		order.setPaymentTime(new Date());
+		// 设置订单状态为已支付
+		order.setStatus(2);
+		MSResult result = orderService.updateOrderStatus(order);
+		logger.info("更新结果为：" + result);
+
+		model.addAttribute("orderId", orderId);
+		model.addAttribute("payment", payment);
+
+		// 付款完成之后将物品从购物车中删除。
+		// TODO
+		// 查询itemId
+		logger.info("获取订单项....");
+		TbOrderItem orderItem = orderService.getOrderItem(orderId);
+
+		logger.info("获取到的itemId为：" + orderItem.getItemId());
+		// 取用户信息
+		TbUser user = (TbUser) request.getAttribute("user");
+		logger.info("从request中取到的用户信息" + user);
+		MSResult reult = cartService.deleteEnCartItem(Long.parseLong(orderItem.getItemId()), user.getId());
+		logger.info("购物车删除结果为：" + result);
+		return "success";
+	}
+
+	/**
+	 * 创建订单号
+	 * 
+	 * @param orderInfo
+	 * @param model
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping(value = "/create", method = RequestMethod.POST)
+	public String createOrder(OrderInfo orderInfo, Model model, HttpServletRequest request) {
+		logger.info("开始创建订单.....");
+		logger.info("前端传递参数：" + orderInfo);
+		// 取用户信息
+		TbUser user = (TbUser) request.getAttribute("user");
+		logger.info("从request中取到的用户信息" + user);
+		// 补全orderIn的属性
+		orderInfo.setUserId(user.getId());
+		orderInfo.setBuyerNick(user.getUsername());
+		// 调用服务
+		String orderId = orderService.createOrder(orderInfo);
+		logger.info("将订单号传递给页面：" + orderId);
+		// 把订单号传递个页面
+		model.addAttribute("orderId", orderId);
+		model.addAttribute("payment", orderInfo.getPayment());
+		model.addAttribute("orderName", "心情杂货铺");
+		// 返回逻辑视图
+		return "alipay/index";
+	}
+
+	@RequestMapping("/pay/{payment}/{orderId}")
+	public String payOrder(@PathVariable String payment, @PathVariable String orderId,Model model) {
+		// 把订单号传递个页面
+		model.addAttribute("orderId", orderId);
+		model.addAttribute("payment", payment);
+		model.addAttribute("orderName", "心情杂货铺");
+		return "alipay/index";
+	}
+	/**
+	 * 
+	 * @param model
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("/my-orders")
+	public String showMyOrders(Model model, HttpServletRequest request) {
+		// 取用户信息
+		TbUser user = (TbUser) request.getAttribute("user");
+		logger.info("从request中取到的用户信息" + user);
+		// 向页面传递信息
+		List<OrderInfo> list = orderService.getOrderList(user.getId());
+		model.addAttribute("orderList", list);
+		return "my-orders";
+	}
+	/**
+	 * 用户删除订单
+	 * @param orderId
+	 * @return
+	 */
+	@RequestMapping("/delOrder/{orderId}")
+	public String delOrder(@PathVariable String orderId) {
+		logger.info("删除订单信息，前端传递参数为：" + orderId);
+		MSResult result = orderService.deleteOrder(orderId);
+		return "my-orders";
+	}
+	/**
+	 * 显示物流
+	 * @return
+	 */
+	@RequestMapping("/express/${order.shippingCode}/${order.shippingName}")
+	public String showExpress(){
+		return "express";
+	}
+}

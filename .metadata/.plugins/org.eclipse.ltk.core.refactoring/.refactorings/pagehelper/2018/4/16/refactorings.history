@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy element &apos;pagehelper-3.4.2-fix.jar&apos; to &apos;main&apos;&#x0D;&#x0A;- Original project: &apos;pagehelper&apos;&#x0D;&#x0A;- Destination element: &apos;main&apos;&#x0D;&#x0A;- Original element: &apos;pagehelper-3.4.2-fix.jar&apos;" description="Copy file" element1="target/pagehelper-3.4.2-fix.jar" files="1" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1523790254615" target="/moodshop-manager-web/src/main" units="0" version="1.0"/>
+</session>
